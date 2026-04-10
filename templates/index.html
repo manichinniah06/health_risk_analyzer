@@ -1,0 +1,1542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HealthAI — Multi-Parameter Health Risk Analyzer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:       #f4f1ea;
+  --paper:    #fdfcf8;
+  --ink:      #100f0d;
+  --ink2:     #3a3830;
+  --muted:    #8c8878;
+  --rule:     #d4cfc3;
+  --accent:   #c8402a;
+  --green:    #1a6b4a;
+  --amber:    #b86c00;
+  --low-c:    #1a6b4a;  --low-bg:  #eef6f1;
+  --med-c:    #b86c00;  --med-bg:  #fdf4e7;
+  --high-c:   #c8402a;  --high-bg: #fdf0ee;
+  --mono:     'JetBrains Mono', monospace;
+  --head:     'Syne', sans-serif;
+  --r:        2px;
+  --shadow:   0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.05);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--head);
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 0; opacity: .7;
+}
+.page { max-width: 1200px; margin: 0 auto; padding: 0 28px 120px; position: relative; z-index: 1; }
+
+/* Masthead */
+.masthead {
+  border-bottom: 2.5px solid var(--ink);
+  padding: 36px 0 22px;
+  margin-bottom: 52px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 16px;
+}
+.brand { display: flex; align-items: center; gap: 14px; }
+.brand-mark {
+  width: 52px; height: 52px;
+  background: var(--ink);
+  border-radius: var(--r);
+  display: grid; place-items: center;
+  font-size: 24px; flex-shrink: 0;
+}
+.brand-name { font-size: 30px; font-weight: 800; letter-spacing: -1.5px; line-height: 1; }
+.brand-name em { color: var(--accent); font-style: normal; }
+.brand-tagline { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: .5px; margin-top: 5px; }
+.masthead-meta { font-family: var(--mono); font-size: 11px; color: var(--muted); text-align: right; line-height: 1.8; }
+
+/* Pipeline */
+.pipeline {
+  background: var(--ink); color: #fdfcf8;
+  border-radius: 4px; padding: 28px 32px; margin-bottom: 48px;
+  overflow: hidden; position: relative;
+}
+.pipeline::before {
+  content: 'HOW IT WORKS';
+  position: absolute; top: 20px; right: 28px;
+  font-family: var(--mono); font-size: 10px; letter-spacing: 2px; opacity: .35;
+}
+.pipe-grid { display: flex; align-items: center; justify-content: center; gap: 0; flex-wrap: wrap; }
+.pipe-box {
+  background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12);
+  border-radius: 3px; padding: 14px 18px; text-align: center; min-width: 130px;
+}
+.pipe-box .icon { font-size: 22px; display: block; margin-bottom: 6px; }
+.pipe-box .label { font-family: var(--mono); font-size: 11px; color: rgba(255,255,255,.7); }
+.pipe-box .sublabel { font-size: 10px; font-family: var(--mono); color: rgba(255,255,255,.4); margin-top: 3px; }
+.pipe-arrow { font-size: 18px; opacity: .4; padding: 0 10px; font-family: var(--mono); }
+.pipe-combine {
+  background: rgba(200,64,42,.25); border: 1px solid rgba(200,64,42,.5);
+  border-radius: 3px; padding: 14px 22px; text-align: center; min-width: 140px;
+}
+.pipe-combine .icon { font-size: 22px; display: block; margin-bottom: 6px; }
+.pipe-combine .label { font-family: var(--mono); font-size: 11px; color: rgba(255,255,255,.85); }
+
+/* Section label */
+.section-label {
+  font-family: var(--mono); font-size: 10px; font-weight: 500;
+  letter-spacing: 2.5px; color: var(--muted);
+  text-transform: uppercase; margin-bottom: 16px;
+  display: flex; align-items: center; gap: 10px;
+}
+.section-label::after { content: ''; flex: 1; height: 1px; background: var(--rule); }
+
+/* Main grid */
+.main-grid {
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  gap: 32px;
+  align-items: start;
+}
+@media (max-width: 960px) { .main-grid { grid-template-columns: 1fr; } }
+
+/* Cards */
+.card {
+  background: var(--paper); border: 1.5px solid var(--rule);
+  border-radius: 4px; padding: 28px; box-shadow: var(--shadow);
+}
+.card-title {
+  font-size: 13px; font-weight: 700; letter-spacing: -.3px; margin-bottom: 20px;
+  display: flex; align-items: center; gap: 8px;
+}
+.card-title .num {
+  width: 22px; height: 22px; background: var(--ink); color: #fdfcf8;
+  border-radius: 50%; font-size: 10px; font-family: var(--mono);
+  display: grid; place-items: center; flex-shrink: 0;
+}
+
+/* Mode toggle — Basic / Full Clinical */
+.mode-toggle {
+  display: flex; gap: 0; margin-bottom: 24px;
+  border: 1.5px solid var(--ink); border-radius: 3px; overflow: hidden;
+}
+.mode-btn {
+  flex: 1; padding: 10px 14px;
+  background: none; border: none; cursor: pointer;
+  font-family: var(--head); font-size: 12px; font-weight: 700;
+  color: var(--muted); transition: all .15s;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.mode-btn:first-child { border-right: 1.5px solid var(--ink); }
+.mode-btn.active { background: var(--ink); color: #fdfcf8; }
+.mode-badge {
+  font-family: var(--mono); font-size: 9px; letter-spacing: 1px;
+  padding: 2px 6px; border-radius: 2px;
+}
+.mode-btn.active .mode-badge { background: rgba(255,255,255,.15); color: rgba(255,255,255,.7); }
+.mode-btn:not(.active) .mode-badge { background: var(--rule); color: var(--muted); }
+
+/* Field group */
+.field-group { display: flex; flex-direction: column; gap: 14px; }
+.field-wrap { display: flex; flex-direction: column; gap: 4px; }
+.field-wrap label { font-size: 11px; font-weight: 600; color: var(--ink2); display: flex; align-items: center; gap: 6px; }
+.field-input {
+  width: 100%; padding: 9px 12px;
+  border: 1.5px solid var(--rule); border-radius: var(--r);
+  font-family: var(--mono); font-size: 13px;
+  background: #fff; color: var(--ink);
+  outline: none; transition: border-color .15s;
+}
+.field-input:focus { border-color: var(--ink); }
+.field-select {
+  width: 100%; padding: 9px 12px;
+  border: 1.5px solid var(--rule); border-radius: var(--r);
+  font-family: var(--mono); font-size: 13px;
+  background: #fff; color: var(--ink);
+  outline: none; transition: border-color .15s;
+  cursor: pointer; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238c8878' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+.field-select:focus { border-color: var(--ink); }
+.field-unit { font-family: var(--mono); font-size: 10px; color: var(--muted); white-space: nowrap; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+.dot-diabetes { background: #3b82f6; }
+.dot-heart    { background: var(--accent); }
+.dot-liver    { background: #7c3aed; }
+.dot-all      { background: var(--ink2); }
+.dot-general  { background: #6b7280; }
+
+/* Section divider within form */
+.form-section {
+  margin-top: 20px; padding-top: 16px;
+  border-top: 1px dashed var(--rule);
+}
+.form-section-label {
+  font-family: var(--mono); font-size: 9px; letter-spacing: 2px;
+  color: var(--muted); text-transform: uppercase;
+  margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+}
+.form-section-label::after { content: ''; flex: 1; height: 1px; background: var(--rule); }
+
+/* Clinical mode fields — hidden by default */
+.clinical-fields { display: none; }
+.clinical-fields.visible { display: flex; flex-direction: column; gap: 14px; }
+
+/* Two-column layout for some fields */
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* Data quality badge */
+.dq-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--mono); font-size: 9px; letter-spacing: 1px;
+  padding: 3px 8px; border-radius: 2px; text-transform: uppercase;
+  margin-bottom: 16px;
+}
+.dq-basic { background: #fdf4e7; color: var(--amber); border: 1px solid #f5d49a; }
+.dq-clinical { background: #eef6f1; color: var(--green); border: 1px solid #a8d5bc; }
+
+/* Tabs */
+.tabs { display: flex; gap: 0; margin-bottom: 20px; border: 1.5px solid var(--rule); border-radius: 3px; overflow: hidden; }
+.tab-btn {
+  flex: 1; padding: 9px 12px; background: none; border: none; cursor: pointer;
+  font-family: var(--head); font-size: 12px; font-weight: 600;
+  color: var(--muted); transition: all .15s; border-right: 1.5px solid var(--rule);
+}
+.tab-btn:last-child { border-right: none; }
+.tab-btn.active { background: var(--ink); color: #fdfcf8; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* PDF/text */
+.drop-zone {
+  border: 2px dashed var(--rule); border-radius: 3px; padding: 28px 20px;
+  text-align: center; cursor: pointer; transition: all .2s;
+}
+.drop-zone:hover { border-color: var(--ink); background: rgba(0,0,0,.02); }
+.drop-zone .dz-icon { font-size: 28px; margin-bottom: 8px; }
+.drop-zone .dz-label { font-size: 12px; color: var(--muted); }
+.drop-zone .dz-hint  { font-family: var(--mono); font-size: 10px; color: var(--rule); margin-top: 6px; }
+textarea {
+  width: 100%; min-height: 100px;
+  border: 1.5px solid var(--rule); border-radius: var(--r);
+  font-family: var(--mono); font-size: 12px; color: var(--ink);
+  padding: 12px; resize: vertical; outline: none;
+  background: #fff; transition: border-color .15s;
+}
+textarea:focus { border-color: var(--ink); }
+
+/* Buttons */
+.btn-primary {
+  width: 100%; padding: 13px;
+  background: var(--ink); color: #fdfcf8;
+  border: none; border-radius: var(--r);
+  font-family: var(--head); font-size: 14px; font-weight: 700;
+  cursor: pointer; letter-spacing: -.3px;
+  transition: transform .1s, opacity .1s; margin-top: 20px;
+}
+.btn-primary:hover { opacity: .88; }
+.btn-primary:active { transform: scale(.98); }
+.btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+.btn-sample {
+  width: 100%; padding: 9px; background: none; border: 1.5px solid var(--rule);
+  border-radius: var(--r); font-family: var(--mono); font-size: 11px; color: var(--muted);
+  cursor: pointer; transition: all .15s; margin-top: 10px;
+}
+.btn-sample:hover { border-color: var(--ink); color: var(--ink); }
+
+/* Results */
+#results { display: none; }
+.risk-banner {
+  border-radius: 4px; padding: 28px 28px 24px; margin-bottom: 24px;
+  position: relative; overflow: hidden; border: 1.5px solid;
+}
+.risk-banner.Low    { background: var(--low-bg);  border-color: #a8d5bc; }
+.risk-banner.Medium { background: var(--med-bg);  border-color: #f5d49a; }
+.risk-banner.High   { background: var(--high-bg); border-color: #f5c5be; }
+.risk-level-label { font-family: var(--mono); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; opacity: .7; margin-bottom: 6px; }
+.risk-level-text { font-size: 42px; font-weight: 800; letter-spacing: -2px; line-height: 1; }
+.Low    .risk-level-text { color: var(--low-c); }
+.Medium .risk-level-text { color: var(--med-c); }
+.High   .risk-level-text { color: var(--high-c); }
+.risk-score-big { position: absolute; right: 28px; top: 50%; transform: translateY(-50%); font-family: var(--mono); font-size: 64px; font-weight: 600; opacity: .18; line-height: 1; }
+.sub-scores { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+.sub-card { background: var(--paper); border: 1.5px solid var(--rule); border-radius: 3px; padding: 16px; text-align: center; }
+.sub-card .sub-icon  { font-size: 20px; margin-bottom: 6px; }
+.sub-card .sub-label { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+.sub-card .sub-value { font-family: var(--mono); font-size: 22px; font-weight: 600; margin-top: 4px; }
+.sub-card .sub-bar   { width: 100%; height: 3px; background: var(--rule); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+.sub-card .sub-bar-fill { height: 100%; border-radius: 2px; transition: width .6s ease; }
+.score-bar-wrap { margin-bottom: 24px; }
+.score-bar-track { width: 100%; height: 8px; background: var(--rule); border-radius: 4px; overflow: hidden; }
+.score-bar-fill { height: 100%; border-radius: 4px; transition: width .8s cubic-bezier(.16,1,.3,1); }
+.Low    .score-bar-fill { background: var(--low-c); }
+.Medium .score-bar-fill { background: var(--med-c); }
+.High   .score-bar-fill { background: var(--high-c); }
+.score-bar-labels { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 9px; color: var(--muted); margin-top: 6px; }
+.factors { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.factor-tag { padding: 5px 12px; border-radius: 2px; font-family: var(--mono); font-size: 11px; font-weight: 500; border: 1px solid; }
+.factor-tag.Borderline              { background: #fdf4e7; color: var(--amber);  border-color: #f5d49a; }
+.factor-tag.High                    { background: #fdf0ee; color: var(--accent); border-color: #f5c5be; }
+.factor-tag[class*="Dangerously"]   { background: #3a0a08; color: #fda99e; border-color: #7a1a12; }
+.factor-tag[class*="Hypertension"]  { background: #fdf0ee; color: var(--accent); border-color: #f5c5be; }
+.factor-tag.Elevated                { background: #fdf0ee; color: var(--accent); border-color: #f5c5be; }
+.factor-tag[class*="Severely"]      { background: #3a0a08; color: #fda99e; border-color: #7a1a12; }
+.factor-tag[class*="Obese"]         { background: #f5f0fe; color: #7c3aed; border-color: #d8b4fe; }
+.factor-tag.Overweight              { background: #fdf4e7; color: var(--amber);  border-color: #f5d49a; }
+.factor-tag.Underweight             { background: #eef6f1; color: var(--green);  border-color: #a8d5bc; }
+.factor-tag[class*="Cardiac"]       { background: #fdf0ee; color: var(--accent); border-color: #f5c5be; }
+.factor-tag[class*="Active"]        { background: #fdf0ee; color: var(--accent); border-color: #f5c5be; }
+.factor-tag[class*="Genetic"]       { background: #f5f0fe; color: #7c3aed; border-color: #d8b4fe; }
+.rec-list { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.rec-list li { padding: 10px 14px; background: rgba(0,0,0,.02); border-left: 3px solid var(--rule); border-radius: 0 2px 2px 0; font-size: 13px; line-height: 1.5; }
+.rec-list.clinical  li { border-left-color: var(--accent); }
+.rec-list.lifestyle li { border-left-color: var(--green); }
+.metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 12px; }
+.metric-box { text-align: center; padding: 16px 10px; background: rgba(0,0,0,.02); border-radius: 3px; }
+.metric-box .m-label { font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; }
+.metric-box .m-model { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 10px; border-top: 1px solid var(--rule); padding-top: 10px; }
+.metric-box .m-val { font-family: var(--mono); font-size: 18px; font-weight: 600; margin-top: 4px; }
+.disclaimer { border-top: 1px solid var(--rule); margin-top: 48px; padding-top: 20px; font-family: var(--mono); font-size: 10px; color: var(--muted); line-height: 1.7; text-align: center; }
+.spinner { display: none; text-align: center; padding: 48px; }
+.spinner-ring { width: 40px; height: 40px; border: 3px solid var(--rule); border-top-color: var(--ink); border-radius: 50%; animation: spin .7s linear infinite; margin: 0 auto 14px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner-text { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.error-box { background: #fdf0ee; border: 1.5px solid #f5c5be; border-radius: 3px; padding: 14px 18px; font-family: var(--mono); font-size: 12px; color: var(--accent); display: none; margin-top: 12px; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+.fade-up { animation: fadeUp .4s ease both; }
+
+/* Data completeness indicator */
+.completeness-bar {
+  height: 3px; background: var(--rule); border-radius: 2px; margin-bottom: 16px; overflow: hidden;
+}
+.completeness-fill {
+  height: 100%; border-radius: 2px; background: var(--green);
+  transition: width .4s ease;
+}
+.completeness-label {
+  font-family: var(--mono); font-size: 10px; color: var(--muted);
+  display: flex; justify-content: space-between; margin-bottom: 4px;
+}
+
+/* ── PDF upload zone ── */
+.pdf-section {
+  margin-bottom: 20px;
+}
+.pdf-section-label {
+  font-family: var(--mono); font-size: 9px; letter-spacing: 2px;
+  color: var(--muted); text-transform: uppercase;
+  margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+}
+.pdf-section-label::after { content: ''; flex: 1; height: 1px; background: var(--rule); }
+.drop-zone {
+  border: 2px dashed var(--rule); border-radius: 3px; padding: 24px 20px;
+  text-align: center; cursor: pointer; transition: all .2s;
+  position: relative; background: var(--paper);
+}
+.drop-zone:hover, .drop-zone.dragover { border-color: var(--ink); background: rgba(0,0,0,.02); }
+.drop-zone.loaded { border-color: var(--green); border-style: solid; background: #eef6f1; }
+.drop-zone input[type=file] {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+}
+.drop-zone .dz-icon { font-size: 26px; margin-bottom: 6px; display: block; }
+.drop-zone .dz-label { font-size: 12px; font-weight: 600; color: var(--ink2); }
+.drop-zone .dz-hint  { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 4px; }
+.drop-zone.loaded .dz-label { color: var(--green); }
+
+/* Extracted fields banner */
+.extracted-notice {
+  display: none;
+  margin-top: 10px; padding: 10px 14px;
+  background: #eef6f1; border: 1px solid #a8d5bc; border-radius: 3px;
+  font-family: var(--mono); font-size: 11px; color: var(--green);
+  line-height: 1.6;
+}
+.extracted-notice.warn {
+  background: #fdf4e7; border-color: #f5d49a; color: var(--amber);
+}
+.extracted-notice.error {
+  background: #fdf0ee; border-color: #f5c5be; color: var(--accent);
+}
+.extracted-notice.visible { display: block; }
+
+/* Auto-filled input highlight */
+.field-input.autofilled,
+.field-select.autofilled {
+  border-color: var(--green) !important;
+  background: #eef6f1 !important;
+  color: var(--green) !important;
+}
+
+/* PDF parsing spinner */
+.pdf-spinner {
+  display: none; text-align: center; padding: 14px;
+  font-family: var(--mono); font-size: 11px; color: var(--muted);
+}
+.pdf-spinner.visible { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.pdf-spinner .mini-ring {
+  width: 16px; height: 16px;
+  border: 2px solid var(--rule); border-top-color: var(--ink);
+  border-radius: 50%; animation: spin .6s linear infinite; flex-shrink: 0;
+}
+
+/* ── Chatbot ─────────────────────────────────────────────────── */
+#chatWidget {
+  position: fixed;
+  bottom: 28px; right: 28px;
+  z-index: 999;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 12px;
+}
+#chatToggleBtn {
+  width: 56px; height: 56px;
+  background: var(--ink); color: #fdfcf8;
+  border: none; border-radius: 50%;
+  font-size: 24px; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,0,0,.22);
+  transition: transform .15s, background .15s;
+  display: grid; place-items: center;
+}
+#chatToggleBtn:hover { transform: scale(1.07); background: #2a2820; }
+#chatToggleBtn .chat-badge {
+  display: none;
+  position: absolute; top: -4px; right: -4px;
+  width: 18px; height: 18px; background: var(--accent);
+  border-radius: 50%; font-size: 10px; font-weight: 700;
+  color: #fff; place-items: center;
+}
+#chatToggleBtn.has-unread { position: relative; }
+#chatToggleBtn.has-unread .chat-badge { display: grid; }
+
+#chatPanel {
+  display: none;
+  width: 380px;
+  max-height: 580px;
+  background: var(--paper);
+  border: 1.5px solid var(--rule);
+  border-radius: 6px;
+  box-shadow: 0 8px 40px rgba(0,0,0,.14);
+  flex-direction: column;
+  overflow: hidden;
+}
+#chatPanel.open { display: flex; }
+
+.chat-header {
+  padding: 14px 18px;
+  background: var(--ink); color: #fdfcf8;
+  display: flex; align-items: center; gap: 10px;
+  flex-shrink: 0;
+}
+.chat-header .ch-icon { font-size: 20px; }
+.chat-header .ch-title { font-size: 13px; font-weight: 700; flex: 1; }
+.chat-header .ch-sub {
+  font-family: var(--mono); font-size: 9px;
+  color: rgba(255,255,255,.5); margin-top: 2px;
+}
+.chat-header .ch-close {
+  background: none; border: none; cursor: pointer;
+  color: rgba(255,255,255,.6); font-size: 18px; line-height: 1;
+  padding: 0 4px; transition: color .1s;
+}
+.chat-header .ch-close:hover { color: #fff; }
+
+#chatMessages {
+  flex: 1; overflow-y: auto;
+  padding: 16px 14px;
+  display: flex; flex-direction: column; gap: 10px;
+  scroll-behavior: smooth;
+}
+#chatMessages::-webkit-scrollbar { width: 4px; }
+#chatMessages::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 2px; }
+
+.chat-msg {
+  max-width: 88%;
+  padding: 10px 13px;
+  border-radius: 3px;
+  font-size: 13px; line-height: 1.55;
+  word-break: break-word;
+  animation: fadeUp .2s ease both;
+}
+.chat-msg.user {
+  align-self: flex-end;
+  background: var(--ink); color: #fdfcf8;
+  border-bottom-right-radius: 0;
+}
+.chat-msg.assistant {
+  align-self: flex-start;
+  background: rgba(0,0,0,.04); color: var(--ink);
+  border: 1px solid var(--rule);
+  border-bottom-left-radius: 0;
+}
+.chat-msg.assistant a { color: var(--accent); }
+.chat-msg.typing {
+  align-self: flex-start;
+  background: rgba(0,0,0,.04);
+  border: 1px solid var(--rule);
+  padding: 12px 16px;
+}
+.typing-dots { display: flex; gap: 4px; }
+.typing-dots span {
+  width: 6px; height: 6px;
+  background: var(--muted); border-radius: 50%;
+  animation: typingBounce 1.2s infinite;
+}
+.typing-dots span:nth-child(2) { animation-delay: .2s; }
+.typing-dots span:nth-child(3) { animation-delay: .4s; }
+@keyframes typingBounce {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-5px); }
+}
+
+.chat-context-bar {
+  padding: 7px 14px;
+  background: #eef6f1; border-top: 1px solid #a8d5bc;
+  font-family: var(--mono); font-size: 10px; color: var(--green);
+  display: none; align-items: center; gap: 6px; flex-shrink: 0;
+}
+.chat-context-bar.active { display: flex; }
+
+.chat-input-row {
+  padding: 10px 12px;
+  border-top: 1.5px solid var(--rule);
+  display: flex; gap: 8px; align-items: flex-end;
+  flex-shrink: 0;
+  background: var(--paper);
+}
+#chatInput {
+  flex: 1;
+  resize: none; border: 1.5px solid var(--rule); border-radius: var(--r);
+  font-family: var(--head); font-size: 13px; color: var(--ink);
+  padding: 8px 10px; outline: none;
+  max-height: 100px; min-height: 38px;
+  transition: border-color .15s; background: #fff;
+  line-height: 1.4;
+}
+#chatInput:focus { border-color: var(--ink); }
+#chatSendBtn {
+  width: 38px; height: 38px; flex-shrink: 0;
+  background: var(--ink); color: #fdfcf8;
+  border: none; border-radius: var(--r);
+  font-size: 16px; cursor: pointer;
+  transition: opacity .1s; display: grid; place-items: center;
+}
+#chatSendBtn:hover { opacity: .85; }
+#chatSendBtn:disabled { opacity: .4; cursor: not-allowed; }
+
+.chat-quick-btns {
+  padding: 0 12px 10px;
+  display: flex; flex-wrap: wrap; gap: 6px;
+  flex-shrink: 0;
+}
+.chat-quick-btn {
+  padding: 5px 10px; border-radius: 20px;
+  background: none; border: 1.5px solid var(--rule);
+  font-family: var(--mono); font-size: 10px; color: var(--ink2);
+  cursor: pointer; transition: all .15s; white-space: nowrap;
+}
+.chat-quick-btn:hover { border-color: var(--ink); background: rgba(0,0,0,.03); }
+
+@media (max-width: 480px) {
+  #chatPanel { width: calc(100vw - 40px); }
+  #chatWidget { bottom: 16px; right: 16px; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Masthead -->
+  <header class="masthead">
+    <div class="brand">
+      <div class="brand-mark">🫀</div>
+      <div>
+        <div class="brand-name">Health<em>AI</em></div>
+        <div class="brand-tagline">Multi-Parameter Health Risk Analyzer · v3.0</div>
+      </div>
+    </div>
+    <div class="masthead-meta">
+      Random Forest Ensemble<br>
+      3 Specialised Models<br>
+      <span id="paramCount">6</span> Clinical Parameters
+    </div>
+  </header>
+
+  <!-- Pipeline Diagram -->
+  <div class="pipeline">
+    <div class="pipe-grid">
+      <div class="pipe-box">
+        <span class="icon">📝</span>
+        <div class="label">User Input</div>
+        <div class="sublabel" id="pipeInputLabel">6–15 parameters</div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="pipe-box" style="min-width:160px;padding:10px 14px;">
+          <span class="icon" style="font-size:16px;">🩸</span>
+          <div class="label" style="font-size:10px;">Diabetes Model</div>
+          <div class="sublabel">Glucose · BMI · Age</div>
+        </div>
+        <div class="pipe-box" style="min-width:160px;padding:10px 14px;">
+          <span class="icon" style="font-size:16px;">❤️</span>
+          <div class="label" style="font-size:10px;">Heart Model</div>
+          <div class="sublabel">Chol · BP · Sex · CP · ECG</div>
+        </div>
+        <div class="pipe-box" style="min-width:160px;padding:10px 14px;">
+          <span class="icon" style="font-size:16px;">🫀</span>
+          <div class="label" style="font-size:10px;">Liver Model</div>
+          <div class="sublabel">Bili · AST · ALT · ALP</div>
+        </div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-combine">
+        <span class="icon">⚖️</span>
+        <div class="label">Weighted Combine</div>
+        <div class="sublabel" style="color:rgba(255,255,255,.5);">40% · 45% · 15%</div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-box">
+        <span class="icon">💡</span>
+        <div class="label">Final Risk Score</div>
+        <div class="sublabel">Explain + Recs</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Grid -->
+  <div class="main-grid">
+
+    <!-- LEFT: Input Form -->
+    <div>
+      <div class="section-label">01 — Patient Input</div>
+
+      <div class="card">
+        <div class="card-title">
+          <span class="num">1</span> Clinical Parameters
+        </div>
+
+        <!-- Mode toggle -->
+        <div class="mode-toggle">
+          <button class="mode-btn active" id="modeBasicBtn" onclick="setMode('basic')">
+            Basic <span class="mode-badge">6 fields</span>
+          </button>
+          <button class="mode-btn" id="modeClinicalBtn" onclick="setMode('clinical')">
+            Full Clinical <span class="mode-badge">15 fields</span>
+          </button>
+        </div>
+
+        <!-- Data completeness bar -->
+        <div class="completeness-label">
+          <span>Model data completeness</span>
+          <span id="completenessVal">40%</span>
+        </div>
+        <div class="completeness-bar">
+          <div class="completeness-fill" id="completenessFill" style="width:40%"></div>
+        </div>
+
+        <!-- Sample presets -->
+        <div style="display:flex;gap:8px;margin-bottom:20px;">
+          <button class="btn-sample" onclick="fillSample('low')"  style="flex:1;margin:0;font-size:10px;">🟢 Low Risk</button>
+          <button class="btn-sample" onclick="fillSample('med')"  style="flex:1;margin:0;font-size:10px;">🟡 Medium Risk</button>
+          <button class="btn-sample" onclick="fillSample('high')" style="flex:1;margin:0;font-size:10px;">🔴 High Risk</button>
+        </div>
+
+        <form id="healthForm">
+
+          <!-- ── BASIC FIELDS (always visible) ── -->
+          <div class="form-section-label" style="margin-top:0;">Core parameters</div>
+          <div class="field-group">
+
+            <div class="field-row">
+              <div class="field-wrap">
+                <label><span class="dot dot-all"></span> Age <span class="field-unit">years</span></label>
+                <input class="field-input" type="number" name="age" id="age" min="1" max="120" placeholder="45" required/>
+              </div>
+              <div class="field-wrap">
+                <label><span class="dot dot-general"></span> Sex</label>
+                <select class="field-select" name="sex" id="sex">
+                  <option value="">— select —</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field-wrap">
+              <label><span class="dot dot-diabetes"></span> Glucose <span class="field-unit">mg/dL · Diabetes model</span></label>
+              <input class="field-input" type="number" name="glucose" id="glucose" min="50" max="500" placeholder="90" required/>
+            </div>
+
+            <div class="field-wrap">
+              <label><span class="dot dot-heart"></span> Cholesterol (total) <span class="field-unit">mg/dL · Heart model</span></label>
+              <input class="field-input" type="number" name="cholesterol" id="cholesterol" min="50" max="600" placeholder="180" required/>
+            </div>
+
+            <div class="field-wrap">
+              <label><span class="dot dot-heart"></span> Blood Pressure (diastolic) <span class="field-unit">mmHg · Heart model</span></label>
+              <input class="field-input" type="number" name="blood_pressure" id="blood_pressure" min="40" max="200" placeholder="75" required/>
+            </div>
+
+            <div class="field-row">
+              <div class="field-wrap">
+                <label><span class="dot dot-diabetes"></span> BMI <span class="field-unit">kg/m²</span></label>
+                <input class="field-input" type="number" step="0.1" name="bmi" id="bmi" min="10" max="70" placeholder="22.5" required/>
+              </div>
+              <div class="field-wrap">
+                <label><span class="dot dot-liver"></span> Bilirubin <span class="field-unit">mg/dL</span></label>
+                <input class="field-input" type="number" step="0.1" name="bilirubin" id="bilirubin" min="0" max="30" placeholder="0.8" required/>
+              </div>
+            </div>
+
+          </div><!-- /basic field-group -->
+
+          <!-- ── CLINICAL FIELDS (hidden by default) ── -->
+          <div class="clinical-fields" id="clinicalFields">
+
+            <!-- Heart section -->
+            <div class="form-section">
+              <div class="form-section-label">❤️ Heart model — additional inputs</div>
+              <div class="field-group">
+
+                <div class="field-wrap">
+                  <label><span class="dot dot-heart"></span> Chest Pain Type</label>
+                  <select class="field-select" name="chest_pain_type" id="chest_pain_type">
+                    <option value="">— select (optional) —</option>
+                    <option value="typical angina">Typical Angina</option>
+                    <option value="atypical angina">Atypical Angina</option>
+                    <option value="non-anginal">Non-Anginal Pain</option>
+                    <option value="asymptomatic">Asymptomatic</option>
+                  </select>
+                </div>
+
+                <div class="field-wrap">
+                  <label><span class="dot dot-heart"></span> Resting ECG Result</label>
+                  <select class="field-select" name="ecg_result" id="ecg_result">
+                    <option value="">— select (optional) —</option>
+                    <option value="normal">Normal</option>
+                    <option value="st-t wave">ST-T Wave Abnormality</option>
+                    <option value="lv hypertrophy">LV Hypertrophy</option>
+                  </select>
+                </div>
+
+                <div class="field-wrap">
+                  <label><span class="dot dot-heart"></span> Exercise-Induced Angina</label>
+                  <select class="field-select" name="exang_ui" id="exang_ui">
+                    <option value="">— select (optional) —</option>
+                    <option value="yes">Yes</option>
+                    <option value="no">No</option>
+                  </select>
+                </div>
+
+                <div class="field-row">
+                  <div class="field-wrap">
+                    <label><span class="dot dot-heart"></span> Max Heart Rate <span class="field-unit">bpm</span></label>
+                    <input class="field-input" type="number" name="max_heart_rate" id="max_heart_rate" min="60" max="220" placeholder="150"/>
+                  </div>
+                  <div class="field-wrap">
+                    <label><span class="dot dot-heart"></span> ST Depression <span class="field-unit">oldpeak</span></label>
+                    <input class="field-input" type="number" step="0.1" name="oldpeak" id="oldpeak" min="0" max="10" placeholder="0.0"/>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Liver section -->
+            <div class="form-section">
+              <div class="form-section-label">🫀 Liver model — enzyme panel</div>
+              <div class="field-group">
+
+                <div class="field-row">
+                  <div class="field-wrap">
+                    <label><span class="dot dot-liver"></span> AST <span class="field-unit">U/L · normal &lt;40</span></label>
+                    <input class="field-input" type="number" name="ast" id="ast" min="0" max="5000" placeholder="25"/>
+                  </div>
+                  <div class="field-wrap">
+                    <label><span class="dot dot-liver"></span> ALT <span class="field-unit">U/L · normal &lt;56</span></label>
+                    <input class="field-input" type="number" name="alt" id="alt" min="0" max="5000" placeholder="20"/>
+                  </div>
+                </div>
+
+                <div class="field-wrap">
+                  <label><span class="dot dot-liver"></span> Alkaline Phosphatase <span class="field-unit">U/L · normal 44–147</span></label>
+                  <input class="field-input" type="number" name="alp" id="alp" min="0" max="2000" placeholder="90"/>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- General / lifestyle section -->
+            <div class="form-section">
+              <div class="form-section-label">General risk factors</div>
+              <div class="field-group">
+
+                <div class="field-wrap">
+                  <label><span class="dot dot-general"></span> Smoking Status</label>
+                  <select class="field-select" name="smoking" id="smoking">
+                    <option value="">— select (optional) —</option>
+                    <option value="never">Never smoked</option>
+                    <option value="former">Former smoker</option>
+                    <option value="yes">Current smoker</option>
+                  </select>
+                </div>
+
+                <div class="field-wrap">
+                  <label><span class="dot dot-general"></span> Family History of Heart Disease / Diabetes</label>
+                  <select class="field-select" name="family_history" id="family_history">
+                    <option value="">— select (optional) —</option>
+                    <option value="no">No known history</option>
+                    <option value="yes">Positive family history</option>
+                  </select>
+                </div>
+
+              </div>
+            </div>
+
+          </div><!-- /clinicalFields -->
+
+          <!-- PDF Upload Zone -->
+          <div class="form-section pdf-section" style="margin-top:20px;">
+            <div class="form-section-label"><span class="num" style="font-size:9px;">2</span> Upload Lab Report PDF</div>
+
+            <div class="drop-zone" id="dropZone">
+              <input type="file" name="pdf_file" id="pdfFileInput" accept=".pdf" />
+              <span class="dz-icon" id="dzIcon">📋</span>
+              <div class="dz-label" id="dzLabel">Upload Lab Report PDF</div>
+              <div class="dz-hint" id="dzHint">Click or drag &amp; drop &middot; auto-fills all fields above</div>
+            </div>
+
+            <div class="pdf-spinner" id="pdfSpinner">
+              <div class="mini-ring"></div>
+              <span>Extracting fields from PDF…</span>
+            </div>
+
+            <div class="extracted-notice" id="extractedNotice"></div>
+          </div>
+
+          <div class="error-box" id="errorBox"></div>
+          <button class="btn-primary" type="submit" id="analyzeBtn">
+            🔬 Analyze Health Risk
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- RIGHT: Results -->
+    <div>
+      <div class="section-label">02 — Analysis Results</div>
+
+      <div class="spinner" id="spinner">
+        <div class="spinner-ring"></div>
+        <div class="spinner-text">Running 3-model ensemble…</div>
+      </div>
+
+      <div class="card" id="emptyState">
+        <div style="text-align:center;padding:48px 24px;color:var(--muted);">
+          <div style="font-size:48px;margin-bottom:16px;">🔬</div>
+          <div style="font-size:15px;font-weight:700;margin-bottom:8px;">Awaiting Analysis</div>
+          <div style="font-family:var(--mono);font-size:11px;line-height:1.7;">
+            Fill in clinical parameters on the left<br>
+            and click <strong>Analyze Health Risk</strong>.<br><br>
+            Switch to <strong>Full Clinical</strong> mode for<br>
+            more accurate model predictions.
+          </div>
+        </div>
+      </div>
+
+      <div id="results">
+
+        <!-- Risk Banner -->
+        <div class="risk-banner fade-up" id="riskBanner">
+          <div class="risk-level-label">OVERALL RISK ASSESSMENT</div>
+          <div class="risk-level-text" id="riskLevelText"></div>
+          <div style="margin-top:8px;font-family:var(--mono);font-size:12px;opacity:.7;" id="riskDesc"></div>
+          <div class="risk-score-big" id="riskScoreBig"></div>
+        </div>
+
+        <!-- Data quality notice -->
+        <div id="dataQualityNotice" class="card fade-up" style="animation-delay:.02s;margin-bottom:20px;padding:14px 18px;">
+          <div style="font-family:var(--mono);font-size:11px;color:var(--muted);" id="dataQualityText"></div>
+        </div>
+
+        <!-- Score Bar -->
+        <div class="card fade-up" style="animation-delay:.05s;margin-bottom:20px;">
+          <div class="card-title">Risk Score</div>
+          <div class="score-bar-wrap" id="scoreBarWrap">
+            <div class="score-bar-track">
+              <div class="score-bar-fill" id="scoreBarFill" style="width:0%"></div>
+            </div>
+            <div class="score-bar-labels">
+              <span>0%</span><span>Low</span><span>Medium</span><span>High</span><span>100%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sub-scores -->
+        <div class="sub-scores fade-up" style="animation-delay:.1s;" id="subScores">
+          <div class="sub-card">
+            <div class="sub-icon">🩸</div>
+            <div class="sub-label">Diabetes</div>
+            <div class="sub-value" id="diabetesScore">–</div>
+            <div class="sub-bar"><div class="sub-bar-fill" id="diabetesBar" style="background:#3b82f6;width:0%"></div></div>
+          </div>
+          <div class="sub-card">
+            <div class="sub-icon">❤️</div>
+            <div class="sub-label">Heart</div>
+            <div class="sub-value" id="heartScore">–</div>
+            <div class="sub-bar"><div class="sub-bar-fill" id="heartBar" style="background:var(--accent);width:0%"></div></div>
+          </div>
+          <div class="sub-card">
+            <div class="sub-icon">🫀</div>
+            <div class="sub-label">Liver</div>
+            <div class="sub-value" id="liverScore">–</div>
+            <div class="sub-bar"><div class="sub-bar-fill" id="liverBar" style="background:#7c3aed;width:0%"></div></div>
+          </div>
+        </div>
+
+        <!-- Contributing Factors -->
+        <div class="card fade-up" style="animation-delay:.15s;margin-bottom:20px;" id="factorsCard">
+          <div class="card-title">⚠️ Contributing Factors</div>
+          <div class="factors" id="factorsList"></div>
+          <div id="noFactors" style="font-family:var(--mono);font-size:12px;color:var(--green);display:none;">
+            ✅ All parameters within normal ranges.
+          </div>
+        </div>
+
+        <!-- Clinical Recommendations -->
+        <div class="card fade-up" style="animation-delay:.2s;margin-bottom:20px;">
+          <div class="card-title">💊 Clinical Recommendations</div>
+          <ul class="rec-list clinical" id="recList"></ul>
+        </div>
+
+        <!-- Lifestyle -->
+        <div class="card fade-up" style="animation-delay:.25s;margin-bottom:20px;">
+          <div class="card-title">🏃 Lifestyle Suggestions</div>
+          <ul class="rec-list lifestyle" id="lifestyleList"></ul>
+        </div>
+
+        <!-- Model Metrics -->
+        <div class="card fade-up" style="animation-delay:.3s;" id="metricsCard">
+          <div class="card-title">📊 Model Performance Metrics</div>
+          <div class="metrics-grid" id="metricsGrid">
+            <div style="font-family:var(--mono);font-size:11px;color:var(--muted);grid-column:1/-1;">Loading metrics…</div>
+          </div>
+        </div>
+
+      </div><!-- /#results -->
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    ⚠️ For educational and demonstration purposes only. Not a substitute for professional medical advice. Built by Team ZEON.
+  </div>
+
+</div>
+
+<!-- ── Chatbot Widget ─────────────────────────────────────────── -->
+<div id="chatWidget">
+  <div id="chatPanel">
+    <div class="chat-header">
+      <span class="ch-icon">🤖</span>
+      <div style="flex:1">
+        <div class="ch-title">HealthAI Assistant</div>
+        <div class="ch-sub">Powered by Llama 3.3 · Groq</div>
+      </div>
+      <button class="ch-close" onclick="toggleChat()" title="Close">✕</button>
+    </div>
+
+    <!-- Context bar shows when a report result is available -->
+    <div class="chat-context-bar" id="chatContextBar">
+      <span>📋</span>
+      <span id="chatContextLabel">Report loaded — ask me about your results</span>
+    </div>
+
+    <div id="chatMessages"></div>
+
+    <!-- Quick-action chips shown before first message -->
+    <div class="chat-quick-btns" id="quickBtns">
+      <button class="chat-quick-btn" onclick="sendQuick('What does my risk score mean?')">What does my score mean?</button>
+      <button class="chat-quick-btn" onclick="sendQuick('Explain the three ML models used.')">How do the models work?</button>
+      <button class="chat-quick-btn" onclick="sendQuick('What lifestyle changes should I make?')">Lifestyle tips</button>
+      <button class="chat-quick-btn" onclick="sendQuick('Is my glucose level normal?')">Is my glucose normal?</button>
+    </div>
+
+    <div class="chat-input-row">
+      <textarea id="chatInput" placeholder="Ask about your results…" rows="1"
+        onkeydown="handleChatKey(event)" oninput="autoResize(this)"></textarea>
+      <button id="chatSendBtn" onclick="sendChat()" title="Send">&#x27A4;</button>
+    </div>
+  </div>
+
+  <button id="chatToggleBtn" onclick="toggleChat()" title="Open AI Health Assistant">
+    💬
+    <span class="chat-badge" id="chatBadge">1</span>
+  </button>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════
+   HealthAI v3 — Client-side controller
+   ═══════════════════════════════════════════ */
+
+// ── Mode state ─────────────────────────────
+let currentMode = 'basic';
+
+function setMode(mode) {
+  currentMode = mode;
+  const clinicalEl = document.getElementById('clinicalFields');
+  const basicBtn   = document.getElementById('modeBasicBtn');
+  const clinicalBtn= document.getElementById('modeClinicalBtn');
+
+  if (mode === 'clinical') {
+    clinicalEl.classList.add('visible');
+    basicBtn.classList.remove('active');
+    clinicalBtn.classList.add('active');
+    document.getElementById('pipeInputLabel').textContent = '15 parameters';
+    document.getElementById('paramCount').textContent = '15';
+  } else {
+    clinicalEl.classList.remove('visible');
+    basicBtn.classList.add('active');
+    clinicalBtn.classList.remove('active');
+    document.getElementById('pipeInputLabel').textContent = '6 parameters';
+    document.getElementById('paramCount').textContent = '6';
+  }
+  updateCompleteness();
+}
+
+// ── Completeness bar ────────────────────────
+const CLINICAL_FIELDS_LIST = [
+  'chest_pain_type','ecg_result','exang_ui','max_heart_rate','oldpeak',
+  'ast','alt','alp','smoking','family_history','sex'
+];
+const BASIC_FIELDS_LIST = ['age','glucose','cholesterol','blood_pressure','bmi','bilirubin'];
+const ALL_FIELDS = [...BASIC_FIELDS_LIST, ...CLINICAL_FIELDS_LIST];
+
+function updateCompleteness() {
+  let filled = 0;
+  ALL_FIELDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.value && el.value.trim() !== '' && el.value !== '— select —') filled++;
+  });
+  const pct = Math.round((filled / ALL_FIELDS.length) * 100);
+  document.getElementById('completenessFill').style.width = pct + '%';
+  document.getElementById('completenessVal').textContent  = pct + '%';
+}
+
+// Listen to all inputs
+ALL_FIELDS.forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', updateCompleteness);
+  if (el) el.addEventListener('change', updateCompleteness);
+});
+
+// ── Sample values ───────────────────────────
+const SAMPLES = {
+  low: {
+    age:34, sex:'female', glucose:88, cholesterol:175, blood_pressure:72, bmi:22.1, bilirubin:0.6,
+    chest_pain_type:'asymptomatic', ecg_result:'normal', exang_ui:'no',
+    max_heart_rate:168, oldpeak:0.0, ast:22, alt:18, alp:75,
+    smoking:'never', family_history:'no'
+  },
+  med: {
+    age:52, sex:'male', glucose:118, cholesterol:214, blood_pressure:84, bmi:28.4, bilirubin:1.0,
+    chest_pain_type:'atypical angina', ecg_result:'normal', exang_ui:'no',
+    max_heart_rate:140, oldpeak:1.2, ast:38, alt:42, alp:110,
+    smoking:'former', family_history:'no'
+  },
+  high: {
+    age:63, sex:'male', glucose:198, cholesterol:267, blood_pressure:97, bmi:34.7, bilirubin:2.1,
+    chest_pain_type:'typical angina', ecg_result:'st-t wave', exang_ui:'yes',
+    max_heart_rate:108, oldpeak:3.5, ast:120, alt:95, alp:210,
+    smoking:'yes', family_history:'yes'
+  },
+};
+
+function fillSample(level) {
+  const s = SAMPLES[level];
+  // Switch to clinical mode if filling full sample
+  if (level !== 'low' || true) setMode('clinical');
+  Object.keys(s).forEach(k => {
+    const el = document.getElementById(k);
+    if (el) { el.value = s[k]; }
+  });
+  updateCompleteness();
+}
+
+// ── Form submit ─────────────────────────────
+document.getElementById("healthForm").addEventListener("submit", async function(e) {
+  e.preventDefault();
+  const btn     = document.getElementById("analyzeBtn");
+  const spinner = document.getElementById("spinner");
+  const errBox  = document.getElementById("errorBox");
+  const empty   = document.getElementById("emptyState");
+  const results = document.getElementById("results");
+
+  btn.disabled = true;
+  errBox.style.display = "none";
+  spinner.style.display = "block";
+  empty.style.display   = "none";
+  results.style.display = "none";
+
+  try {
+    const formData = new FormData(this);
+    const res  = await fetch("/predict", { method: "POST", body: formData });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || "Server error");
+    renderResults(data);
+    loadMetrics();
+    results.style.display = "block";
+    results.scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (err) {
+    errBox.textContent = "❌ " + err.message;
+    errBox.style.display = "block";
+    empty.style.display = "block";
+  } finally {
+    spinner.style.display = "none";
+    btn.disabled = false;
+  }
+});
+
+// ── Render results ──────────────────────────
+function renderResults(d) {
+  const level = d.risk_level;
+  const score = d.risk_score;
+
+  const banner = document.getElementById("riskBanner");
+  banner.className = `risk-banner fade-up ${level}`;
+  document.getElementById("riskLevelText").textContent = level + " Risk";
+  document.getElementById("riskScoreBig").textContent  = score + "%";
+  document.getElementById("riskDesc").textContent      = riskDesc(level);
+
+  document.getElementById("scoreBarWrap").className = `score-bar-wrap ${level}`;
+  setTimeout(() => {
+    document.getElementById("scoreBarFill").style.width = score + "%";
+  }, 100);
+
+  const ss = d.sub_scores;
+  document.getElementById("diabetesScore").textContent = ss.diabetes + "%";
+  document.getElementById("heartScore").textContent    = ss.heart    + "%";
+  document.getElementById("liverScore").textContent    = ss.liver    + "%";
+  setTimeout(() => {
+    document.getElementById("diabetesBar").style.width = ss.diabetes + "%";
+    document.getElementById("heartBar").style.width    = ss.heart    + "%";
+    document.getElementById("liverBar").style.width    = ss.liver    + "%";
+  }, 200);
+
+  // Data quality notice
+  const dqNotice = document.getElementById("dataQualityNotice");
+  const dqText   = document.getElementById("dataQualityText");
+  if (d.data_quality) {
+    const isClinical = d.data_quality.clinical_mode;
+    const hf = d.data_quality.heart_fields_provided || [];
+    const lf = d.data_quality.liver_fields_provided || [];
+    if (isClinical) {
+      dqText.innerHTML = `✅ <strong>Full Clinical Mode</strong> — Heart model received: ${hf.join(', ')}. Liver model received: ${lf.join(', ')}. Prediction accuracy is higher.`;
+      dqNotice.style.borderLeft = '3px solid var(--green)';
+    } else {
+      dqText.innerHTML = `⚠️ <strong>Basic Mode</strong> — Heart &amp; Liver models using median fill for missing fields. Switch to <strong>Full Clinical</strong> for a more accurate score.`;
+      dqNotice.style.borderLeft = '3px solid var(--amber)';
+    }
+    dqNotice.style.display = 'block';
+  }
+
+  // Contributing factors
+  const factorsList = document.getElementById("factorsList");
+  const noFactors   = document.getElementById("noFactors");
+  factorsList.innerHTML = "";
+  if (d.contributing_factors.length === 0) {
+    noFactors.style.display = "block";
+    factorsList.style.display = "none";
+  } else {
+    noFactors.style.display = "none";
+    factorsList.style.display = "flex";
+    d.contributing_factors.forEach(cf => {
+      const tag = document.createElement("span");
+      const cls = String(cf.status).replace(/\s+/g, "");
+      tag.className = `factor-tag ${cls}`;
+      tag.textContent = `${cf.param}: ${cf.value} — ${cf.status}`;
+      factorsList.appendChild(tag);
+    });
+  }
+
+  const recList = document.getElementById("recList");
+  recList.innerHTML = "";
+  d.recommendations.forEach(r => {
+    const li = document.createElement("li"); li.textContent = r; recList.appendChild(li);
+  });
+
+  const lifeList = document.getElementById("lifestyleList");
+  lifeList.innerHTML = "";
+  d.lifestyle.forEach(r => {
+    const li = document.createElement("li"); li.textContent = r; lifeList.appendChild(li);
+  });
+
+  // ── Feed result into chatbot context (v5) ──
+  setChatContext(d);
+}
+
+function riskDesc(level) {
+  if (level === "Low")    return "Parameters are within or near normal clinical ranges. Maintain healthy habits.";
+  if (level === "Medium") return "One or more parameters are borderline. Consider preventive measures now.";
+  return "Multiple parameters are significantly elevated. Seek medical consultation promptly.";
+}
+
+// ── Load metrics ────────────────────────────
+async function loadMetrics() {
+  try {
+    const res  = await fetch("/metrics");
+    const data = await res.json();
+    const grid = document.getElementById("metricsGrid");
+    grid.innerHTML = "";
+    const models = [
+      { key: "diabetes", icon: "🩸", label: "Diabetes" },
+      { key: "heart",    icon: "❤️",  label: "Heart"    },
+      { key: "liver",    icon: "🫀",  label: "Liver"    },
+    ];
+    models.forEach(m => {
+      const mx = data[m.key];
+      if (!mx) return;
+      const box = document.createElement("div");
+      box.className = "metric-box";
+      box.innerHTML = `
+        <div class="m-label">Accuracy</div>
+        <div class="m-val">${(mx.accuracy * 100).toFixed(1)}%</div>
+        <div class="m-label" style="margin-top:8px">F1 Score</div>
+        <div class="m-val">${(mx.f1 * 100).toFixed(1)}%</div>
+        <div class="m-model">${m.icon} ${m.label}</div>
+      `;
+      grid.appendChild(box);
+    });
+  } catch (e) { console.warn("Metrics load failed:", e); }
+}
+
+// Init completeness on load
+updateCompleteness();
+
+// ── PDF Upload & Auto-fill ──────────────────
+const dropZone     = document.getElementById('dropZone');
+const pdfInput     = document.getElementById('pdfFileInput');
+const pdfSpinner   = document.getElementById('pdfSpinner');
+const extractNotice= document.getElementById('extractedNotice');
+const dzLabel      = document.getElementById('dzLabel');
+const dzHint       = document.getElementById('dzHint');
+const dzIcon       = document.getElementById('dzIcon');
+
+// SELECT field value map for normalising extracted strings
+const SELECT_OPTIONS = {
+  sex:             { male:'male', female:'female' },
+  chest_pain_type: { 'typical angina':'typical angina','atypical angina':'atypical angina','non-anginal':'non-anginal','asymptomatic':'asymptomatic' },
+  ecg_result:      { normal:'normal','st-t wave':'st-t wave','lv hypertrophy':'lv hypertrophy' },
+  exang_ui:        { yes:'yes', no:'no', true:'yes', false:'no' },
+  smoking:         { never:'never', former:'former', yes:'yes', current:'yes', smoker:'yes', no:'never', quit:'former', ex:'former' },
+  family_history:  { yes:'yes', no:'no', positive:'yes', negative:'no' },
+};
+
+// Drag-and-drop styling
+dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file && file.name.toLowerCase().endsWith('.pdf')) {
+    // Assign to the real file input so it travels with the form
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    pdfInput.files = dt.files;
+    handlePdfFile(file);
+  }
+});
+
+pdfInput.addEventListener('change', () => {
+  if (pdfInput.files[0]) handlePdfFile(pdfInput.files[0]);
+});
+
+async function handlePdfFile(file) {
+  // Update drop zone appearance
+  dzIcon.textContent = '📄';
+  dzLabel.textContent = file.name;
+  dzHint.textContent  = `${(file.size / 1024).toFixed(1)} KB · parsing…`;
+  dropZone.classList.add('loaded');
+  extractNotice.className = 'extracted-notice';
+  extractNotice.textContent = '';
+  pdfSpinner.classList.add('visible');
+
+  try {
+    const fd = new FormData();
+    fd.append('pdf_file', file);
+
+    const res  = await fetch('/extract', { method: 'POST', body: fd });
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.error || 'Extraction failed');
+
+    const fields  = data.extracted_fields || {};
+    const mode    = data.report_mode || 'basic';
+    const missing = data.missing_core_fields || [];
+
+    // Clear old autofill highlights
+    document.querySelectorAll('.autofilled').forEach(el => el.classList.remove('autofilled'));
+
+    let filled = [];
+
+    // Fill numeric inputs
+    const numericFields = ['age','glucose','cholesterol','blood_pressure','bmi','bilirubin',
+                           'max_heart_rate','oldpeak','ast','alt','alp','ca','fbs'];
+    numericFields.forEach(key => {
+      if (fields[key] !== undefined && fields[key] !== null) {
+        const el = document.getElementById(key);
+        if (el) {
+          el.value = fields[key];
+          el.classList.add('autofilled');
+          filled.push(key.replace('_',' '));
+        }
+      }
+    });
+
+    // Fill select inputs
+    const selectFields = ['sex','chest_pain_type','ecg_result','exang_ui','smoking','family_history'];
+    selectFields.forEach(key => {
+      if (fields[key]) {
+        const el  = document.getElementById(key);
+        const map = SELECT_OPTIONS[key] || {};
+        const val = map[fields[key].toLowerCase()] || fields[key].toLowerCase();
+        if (el) {
+          // Check the option exists before setting
+          const opts = Array.from(el.options).map(o => o.value);
+          if (opts.includes(val)) {
+            el.value = val;
+            el.classList.add('autofilled');
+            filled.push(key.replace(/_/g,' '));
+          }
+        }
+      }
+    });
+
+    // Auto-switch to clinical mode if clinical fields found
+    if (mode === 'clinical') setMode('clinical');
+
+    // Update drop zone hint
+    dzHint.textContent = `${filled.length} fields extracted · ${mode} mode`;
+
+    // Show banner
+    if (filled.length === 0) {
+      extractNotice.className = 'extracted-notice warn visible';
+      extractNotice.innerHTML = '⚠️ No fields could be extracted from this PDF. Please enter values manually or check the PDF format.';
+    } else if (missing.length > 0) {
+      extractNotice.className = 'extracted-notice warn visible';
+      extractNotice.innerHTML = `✅ Extracted: <strong>${filled.join(', ')}</strong><br>⚠️ Still needed: <strong>${missing.join(', ')}</strong> — please fill in manually.`;
+    } else {
+      extractNotice.className = 'extracted-notice visible';
+      extractNotice.innerHTML = `✅ Extracted: <strong>${filled.join(', ')}</strong>`;
+    }
+
+    updateCompleteness();
+
+  } catch (err) {
+    dropZone.classList.remove('loaded');
+    dzLabel.textContent = 'Upload Lab Report PDF';
+    dzHint.textContent  = 'Click or drag & drop · auto-fills all fields above';
+    dzIcon.textContent  = '📋';
+    extractNotice.className = 'extracted-notice error visible';
+    extractNotice.textContent = '❌ ' + err.message;
+  } finally {
+    pdfSpinner.classList.remove('visible');
+  }
+}
+
+// ══════════════════════════════════════════════
+//  CHATBOT — v5 integration
+// ══════════════════════════════════════════════
+
+// Stores the last prediction result so the bot has context
+let _lastPrediction = null;
+
+// Chat conversation history sent to /chat
+let _chatHistory = [];
+
+// Whether chat panel is open
+let _chatOpen = false;
+
+// Has the user been greeted?
+let _greeted = false;
+
+// ── Toggle panel ────────────────────────────
+function toggleChat() {
+  _chatOpen = !_chatOpen;
+  const panel = document.getElementById('chatPanel');
+  const btn   = document.getElementById('chatToggleBtn');
+  panel.classList.toggle('open', _chatOpen);
+  btn.classList.remove('has-unread');
+  document.getElementById('chatBadge').style.display = 'none';
+
+  if (_chatOpen && !_greeted) {
+    _greeted = true;
+    appendBotMessage(
+      "👋 Hi! I'm your HealthAI Assistant. " +
+      (_lastPrediction
+        ? "I can see your latest report — ask me anything about your scores, parameters, or what steps to take next."
+        : "Run an analysis on the left and I can explain your results in plain language. Or just ask me any health question!")
+    );
+  }
+}
+
+// ── Show unread badge ───────────────────────
+function showUnreadBadge() {
+  if (_chatOpen) return;
+  const btn = document.getElementById('chatToggleBtn');
+  btn.classList.add('has-unread');
+  document.getElementById('chatBadge').style.display = 'grid';
+}
+
+// ── Append messages ─────────────────────────
+function appendUserMessage(text) {
+  const el = document.createElement('div');
+  el.className = 'chat-msg user';
+  el.textContent = text;
+  document.getElementById('chatMessages').appendChild(el);
+  scrollChat();
+  hideQuickBtns();
+}
+
+function appendBotMessage(text) {
+  const el = document.createElement('div');
+  el.className = 'chat-msg assistant';
+  // Minimal markdown: **bold**, bullet lines starting with -
+  el.innerHTML = text
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n- /g, '\n• ')
+    .replace(/\n/g, '<br>');
+  document.getElementById('chatMessages').appendChild(el);
+  scrollChat();
+}
+
+function appendTyping() {
+  const el = document.createElement('div');
+  el.className = 'chat-msg typing';
+  el.id = 'typingIndicator';
+  el.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+  document.getElementById('chatMessages').appendChild(el);
+  scrollChat();
+  return el;
+}
+
+function removeTyping() {
+  const el = document.getElementById('typingIndicator');
+  if (el) el.remove();
+}
+
+function scrollChat() {
+  const msgs = document.getElementById('chatMessages');
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function hideQuickBtns() {
+  document.getElementById('quickBtns').style.display = 'none';
+}
+
+// ── Send message ─────────────────────────────
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const text  = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+  autoResize(input);
+  document.getElementById('chatSendBtn').disabled = true;
+
+  appendUserMessage(text);
+  _chatHistory.push({ role: 'user', content: text });
+
+  const typingEl = appendTyping();
+
+  try {
+    const payload = {
+      messages: _chatHistory,
+      context:  _lastPrediction || {},
+    };
+
+    const res  = await fetch('/chat', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload),
+    });
+    const data = await res.json();
+
+    removeTyping();
+
+    if (!res.ok || data.error) {
+      appendBotMessage('⚠️ Sorry, I ran into an error: ' + (data.error || 'Unknown error.'));
+    } else {
+      const reply = data.reply || '(No response)';
+      appendBotMessage(reply);
+      _chatHistory.push({ role: 'assistant', content: reply });
+      // Keep history window manageable (last 20 turns)
+      if (_chatHistory.length > 20) _chatHistory = _chatHistory.slice(-20);
+    }
+  } catch (err) {
+    removeTyping();
+    appendBotMessage('⚠️ Network error — please try again.');
+  } finally {
+    document.getElementById('chatSendBtn').disabled = false;
+    document.getElementById('chatInput').focus();
+  }
+}
+
+function sendQuick(text) {
+  document.getElementById('chatInput').value = text;
+  sendChat();
+}
+
+// ── Key handler ────────────────────────────
+function handleChatKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendChat();
+  }
+}
+
+// ── Auto-resize textarea ────────────────────
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+}
+
+// ── Inject prediction context into chatbot ──
+// Called from renderResults() below once a /predict response arrives
+function setChatContext(predictionData) {
+  _lastPrediction = predictionData;
+
+  // Update context bar
+  const bar   = document.getElementById('chatContextBar');
+  const label = document.getElementById('chatContextLabel');
+  const level = predictionData.risk_level;
+  const score = predictionData.risk_score;
+  label.textContent = `${level} Risk · ${score}% — ask me about your report`;
+  bar.classList.add('active');
+
+  // Show unread badge on chat button
+  showUnreadBadge();
+
+  // If chat is already open, append a contextual prompt
+  if (_chatOpen && _chatHistory.length > 0) {
+    appendBotMessage(
+      `📋 I've updated my context with your latest report (${level} Risk, ${score}%). ` +
+      `Feel free to ask me what it means!`
+    );
+  }
+}
+</script>
+</body>
+</html>
