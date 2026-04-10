@@ -73,26 +73,6 @@ python app.py
 http://localhost:5000
 ```
 
----
-
-## 🧪 Sample Test Values
-
-### Low Risk
-
-| Parameter | Value |
-| --------- | ----- | ------- | --- | ----------- | --- | -------------- | --- | --- | ---- | --------- | --- |
-| Age       | 34    | Glucose | 88  | Cholesterol | 175 | Blood Pressure | 72  | BMI | 22.1 | Bilirubin | 0.6 |
-
-### High Risk
-
-| Parameter | Value |
-| --------- | ----- | ------- | --- | ----------- | --- | -------------- | --- | --- | ---- | --------- | --- |
-| Age       | 63    | Glucose | 198 | Cholesterol | 267 | Blood Pressure | 97  | BMI | 34.7 | Bilirubin | 2.1 |
-
-> Use the **"Low / Medium / High"** preset buttons in the UI.
-
----
-
 ## 📊 API
 
 ### POST /predict
